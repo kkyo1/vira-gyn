@@ -1,0 +1,32 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model WasteAnalysis {
+  id               String   @id @default(uuid())
+  category         String
+  material         String
+  recyclable       Boolean
+  destination      String
+  preparation      Json     // Array de strings armazenado como JSON
+  environmentalTip String
+  confidence       Float?
+  createdAt        DateTime @default(now())
+}
+
+model CollectionPoint {
+  id                 String   @id @default(uuid())
+  name               String
+  address            String
+  latitude           Float
+  longitude          Float
+  acceptedCategories String[] // Array de categorias aceitas
+  openingHours       String?
+  verified           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+}
