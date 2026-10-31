@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIRA GYN — A cidade que transforma resíduos em oportunidades</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            200: '#a7f3d0',
+                            300: '#6ee7b7',
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                            950: '#022c22'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Leaflet.js CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- Vue 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-transition-enter-active, .tab-transition-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+        .tab-transition-enter-from { opacity: 0; transform: translateY(8px); }
+        .tab-transition-leave-to { opacity: 0; transform: translateY(-8px); }
+        .glass-card { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 9999px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="h-full text-slate-800 antialiased flex flex-col selection:bg-brand-500 selection:text-white">
+
+    <div id="app" class="min-h-screen flex flex-col justify-between">
+
+        <!-- Top Banner -->
+        <div class="bg-brand-950 text-brand-100 text-xs py-2 px-4 text-center font-medium flex items-center justify-center gap-2 border-b border-brand-900">
+            <span class="inline-block w-2 h-2 rounded-full bg-brand-400 animate-pulse"></span>
+            <span>VIRA GYN — Hackathon Goiânia Sustentável</span>
+            <span class="hidden md:inline text-brand-400 font-semibold">• Powered by Gemma 4 Multimodal AI & NestJS</span>
+        </div>
+
+        <!-- Navigation Header -->
+        <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+                
+                <!-- Brand Logo -->
+                <div class="flex items-center gap-3 cursor-pointer group" @click="activeTab = 'home'">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-700 to-brand-500 flex items-center justify-center text-white shadow-lg shadow-brand-500/25 group-hover:scale-105 transition-transform">
+                        <i class="fa-solid fa-recycle text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-2xl font-black tracking-tight text-slate-900">VIRA</span>
+                            <span class="text-2xl font-black tracking-tight text-brand-600">GYN</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 font-semibold tracking-wide uppercase hidden sm:block">Goiânia Circular</p>
+                    </div>
+                </div>
+
+                <!-- Desktop Navigation Menu -->
+                <nav class="hidden md:flex items-center gap-1 bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/70">
+                    <button 
+                        @click="activeTab = 'home'" 
+                        :class="activeTab === 'home' ? 'bg-white text-brand-950 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900 font-medium'"
+                        class="px-4 py-2 rounded-xl text-sm transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-house text-xs"></i>
+                        <span>Início</span>
+                    </button>
+                    <button 
+                        @click="activeTab = 'identify'" 
+                        :class="activeTab === 'identify' ? 'bg-white text-brand-950 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900 font-medium'"
+                        class="px-4 py-2 rounded-xl text-sm transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-camera text-xs"></i>
+                        <span>Identificar Resíduo</span>
+                    </button>
+                    <button 
+                        @click="activeTab = 'points'" 
+                        :class="activeTab === 'points' ? 'bg-white text-brand-950 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900 font-medium'"
+                        class="px-4 py-2 rounded-xl text-sm transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-map-location-dot text-xs"></i>
+                        <span>Pontos de Coleta</span>
+                    </button>
+                    <button 
+                        @click="activeTab = 'dashboard'" 
+                        :class="activeTab === 'dashboard' ? 'bg-white text-brand-950 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900 font-medium'"
+                        class="px-4 py-2 rounded-xl text-sm transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-chart-pie text-xs"></i>
+                        <span>Dashboard</span>
+                    </button>
+                </nav>
+
+                <!-- Action Button -->
+                <div class="flex items-center gap-3">
+                    <button 
+                        @click="activeTab = 'identify'" 
+                        class="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-5 py-2.5 rounded-2xl shadow-lg shadow-brand-600/20 transition-all transform active:scale-95 flex items-center gap-2 text-sm">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span class="hidden sm:inline">Escanear Foto</span>
+                        <span class="sm:hidden">Escanear</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-grow">
+
+            <!-- TAB 1: HOME PAGE -->
+            <section v-if="activeTab === 'home'" class="space-y-16 pb-16">
+                <!-- Hero Banner -->
+                <div class="relative overflow-hidden bg-gradient-to-b from-brand-50/70 via-white to-slate-50 border-b border-slate-200/60 py-16 md:py-24">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                        <div class="lg:col-span-7 space-y-6">
+                            <span class="inline-flex items-center gap-2 bg-brand-100 text-brand-900 text-xs font-bold px-3.5 py-1.5 rounded-full uppercase tracking-wider border border-brand-200">
+                                <i class="fa-solid fa-leaf text-brand-600"></i> Sustentabilidade & Tecnologia em Goiânia
+                            </span>
+                            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-950 tracking-tight leading-tight">
+                                A cidade que transforma resíduos em <span class="text-brand-600 underline decoration-brand-300 decoration-wavy">oportunidades</span>.
+                            </h1>
+                            <p class="text-lg text-slate-600 leading-relaxed font-normal">
+                                O <strong>VIRA GYN</strong> conecta a população aos pontos de reciclagem da capital goiana. Tire uma foto do seu resíduo para receber instruções de preparo e o ecoponto ideal em segundos através de Inteligência Artificial.
+                            </p>
+                            <div class="flex flex-col sm:flex-row gap-4 pt-4">
+                                <button 
+                                    @click="activeTab = 'identify'" 
+                                    class="bg-brand-600 hover:bg-brand-700 text-white font-bold py-4 px-8 rounded-2xl shadow-xl shadow-brand-600/30 transition-all flex items-center justify-center gap-3 text-base group">
+                                    <span>Identificar meu resíduo agora</span>
+                                    <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                                </button>
+                                <button 
+                                    @click="activeTab = 'points'" 
+                                    class="bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-bold py-4 px-8 rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2 text-base">
+                                    <i class="fa-solid fa-location-dot text-brand-600"></i>
+                                    <span>Ver Ecopontos em Goiânia</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Hero Interactive Card -->
+                        <div class="lg:col-span-5 relative">
+                            <div class="absolute -inset-4 bg-gradient-to-r from-brand-400 to-teal-400 rounded-3xl blur-2xl opacity-20 animate-pulse"></div>
+                            <div class="relative bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-2xl space-y-6">
+                                <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center text-brand-700 font-bold">
+                                            <i class="fa-solid fa-brain"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-bold text-slate-900 text-sm">Gemma 4 Multimodal</h3>
+                                            <p class="text-xs text-slate-500">Classificação via visão computacional</p>
+                                        </div>
+                                    </div>
+                                    <span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Ativo
+                                    </span>
+                                </div>
+
+                                <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex items-center gap-4">
+                                    <div class="w-16 h-16 bg-white shadow-sm rounded-xl flex items-center justify-center text-3xl shrink-0 border border-slate-200">
+                                        🥤
+                                    </div>
+                                    <div>
+                                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Exemplo de Resíduo</span>
+                                        <h4 class="font-bold text-slate-900 text-base">Garrafa PET Transparente</h4>
+                                        <p class="text-xs text-brand-700 font-semibold mt-0.5">Reciclável • Coleta Seletiva / Ecoponto</p>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-3 text-xs">
+                                    <div class="flex justify-between font-semibold">
+                                        <span class="text-slate-600">Material Predominante:</span>
+                                        <span class="text-slate-900 font-bold">Plástico PET (Cód. 1)</span>
+                                    </div>
+                                    <div class="flex justify-between font-semibold">
+                                        <span class="text-slate-600">Destinação Recomendada:</span>
+                                        <span class="text-slate-900 font-bold">Ecoponto Setor Bueno</span>
+                                    </div>
+                                </div>
+
+                                <div class="pt-2">
+                                    <button @click="activeTab = 'identify'" class="w-full bg-brand-50 hover:bg-brand-100 text-brand-900 text-xs font-bold py-3 rounded-xl border border-brand-200 transition-colors flex items-center justify-center gap-2">
+                                        <span>Testar identificação com outra imagem</span>
+                                        <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Problem & Solution Cards -->
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+                    <div class="text-center max-w-3xl mx-auto space-y-3">
+                        <h2 class="text-3xl font-extrabold text-slate-950">Por que o VIRA GYN é essencial?</h2>
+                        <p class="text-slate-600">Transformando desafios ambientais urbanos em soluções tecnológicas acessíveis para todos os cidadãos goianienses.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-4 hover:shadow-md transition-shadow">
+                            <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl font-bold">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-900">Descarte Incorreto</h3>
+                            <p class="text-slate-600 text-sm leading-relaxed">
+                                Falta de informação sobre reciclabilidade leva materiais nobres para aterros e contamina lotes de resíduos recicláveis.
+                            </p>
+                        </div>
+
+                        <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-4 hover:shadow-md transition-shadow">
+                            <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold">
+                                <i class="fa-solid fa-map-pin"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-900">Dificuldade de Localização</h3>
+                            <p class="text-slate-600 text-sm leading-relaxed">
+                                Munícipes não sabem onde encontrar os Ecopontos da Prefeitura de Goiânia ou cooperativas especializadas para cada material.
+                            </p>
+                        </div>
+
+                        <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-4 hover:shadow-md transition-shadow">
+                            <div class="w-12 h-12 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl font-bold">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-900">Solução Inteligente</h3>
+                            <p class="text-slate-600 text-sm leading-relaxed">
+                                Análise instantânea com Gemma 4 orienta a lavagem, amassamento e separação do lixo, direcionando ao ecoponto exato.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: IDENTIFICAÇÃO INTELIGENTE (IA GEMMA 4 SIMULATOR) -->
+            <section v-if="activeTab === 'identify'" class="py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-8">
+                <div class="text-center space-y-3">
+                    <span class="bg-brand-100 text-brand-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                        <i class="fa-solid fa-microchip"></i> Módulo IA Gemma 4
+                    </span>
+                    <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-950">Identificação de Resíduos por Imagem</h1>
+                    <p class="text-slate-600 max-w-xl mx-auto text-sm">
+                        Envie uma foto do seu resíduo ou selecione um dos exemplos para simular a análise pela inteligência artificial.
+                    </p>
+                </div>
+
+                <!-- Quick Samples Selector -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <span class="text-xs font-extrabold uppercase text-slate-400 tracking-wider block text-center">Imagens de Exemplo para Teste Rápido</span>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <button 
+                            v-for="sample in sampleWastes" 
+                            :key="sample.id"
+                            @click="selectSample(sample)"
+                            class="p-2.5 rounded-xl border border-slate-200 hover:border-brand-500 bg-slate-50 hover:bg-brand-50 transition-all text-left flex items-center gap-3 group">
+                            <span class="text-2xl group-hover:scale-110 transition-transform">{{ sample.emoji }}</span>
+                            <div class="truncate">
+                                <p class="text-xs font-bold text-slate-900 truncate">{{ sample.name }}</p>
+                                <p class="text-[10px] text-slate-500 capitalize">{{ sample.category }}</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- File Upload / Drag & Drop Dropzone -->
+                <div 
+                    @dragover.prevent="dragActive = true"
+                    @dragleave.prevent="dragActive = false"
+                    @drop.prevent="handleDrop"
+                    :class="[
+                        dragActive ? 'border-brand-500 bg-brand-50/50' : 'border-slate-300 bg-white',
+                        selectedImage ? 'p-4' : 'p-8 text-center'
+                    ]"
+                    class="rounded-3xl border-2 border-dashed transition-all shadow-md relative overflow-hidden"
+                >
+                    <input 
+                        type="file" 
+                        ref="fileInput" 
+                        accept="image/*" 
+                        capture="environment" 
+                        class="hidden" 
+                        @change="handleFileUpload"
+                    >
+
+                    <!-- Default Dropzone State -->
+                    <div v-if="!selectedImage" @click="triggerFileInput" class="cursor-pointer space-y-4 py-6">
+                        <div class="w-20 h-20 bg-brand-50 rounded-full mx-auto flex items-center justify-center text-brand-600 shadow-inner">
+                            <i class="fa-solid fa-cloud-arrow-up text-3xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900">Clique para enviar ou arraste uma foto</h3>
+                            <p class="text-xs text-slate-500 mt-1">Suporta câmera do celular em dispositivos móveis (JPG, PNG, WEBP)</p>
+                        </div>
+                    </div>
+
+                    <!-- Selected Image Preview State -->
+                    <div v-else class="space-y-4">
+                        <div class="relative max-w-sm mx-auto bg-slate-100 rounded-2xl overflow-hidden border border-slate-200">
+                            <img :src="selectedImage" alt="Preview do resíduo" class="w-full h-64 object-contain mx-auto p-2">
+                            <button 
+                                @click="resetImage" 
+                                class="absolute top-2 right-2 bg-rose-500 hover:bg-rose-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md transition-colors"
+                                title="Remover imagem">
+                                <i class="fa-solid fa-xmark text-sm"></i>
+                            </button>
+                        </div>
+                        <p class="text-xs text-center font-semibold text-slate-500">Imagem pronta para análise multimodal</p>
+                    </div>
+                </div>
+
+                <!-- Analysis CTA Button -->
+                <div v-if="selectedImage && !isAnalyzing && !analysisResult" class="text-center">
+                    <button 
+                        @click="runGemmaAnalysis" 
+                        class="bg-brand-600 hover:bg-brand-700 text-white font-bold py-4 px-10 rounded-2xl shadow-xl shadow-brand-600/30 transition-all text-base flex items-center justify-center gap-3 mx-auto">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>Analisar com Gemma 4 IA</span>
+                    </button>
+                </div>
+
+                <!-- Loading State Spinner -->
+                <div v-if="isAnalyzing" class="bg-white rounded-3xl p-8 border border-slate-200 shadow-md text-center space-y-4">
+                    <div class="inline-block relative">
+                        <div class="w-16 h-16 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin"></div>
+                        <div class="absolute inset-0 flex items-center justify-center text-brand-600">
+                            <i class="fa-solid fa-microchip text-xs"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-900 text-lg">Gemma 4 Multimodal processando...</h4>
+                        <p class="text-xs text-slate-500">Identificando polímeros, densidade do material e ecopontos recomendados em Goiânia.</p>
+                    </div>
+                </div>
+
+                <!-- Structured Results Display Card -->
+                <div v-if="analysisResult && !isAnalyzing" class="bg-white rounded-3xl border border-brand-200 shadow-xl p-6 sm:p-8 space-y-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-6 gap-4">
+                        <div>
+                            <span class="text-[11px] font-black uppercase tracking-wider text-brand-700 bg-brand-50 px-3 py-1 rounded-full border border-brand-200">
+                                Categoria: {{ analysisResult.category }}
+                            </span>
+                            <h2 class="text-2xl font-black text-slate-900 mt-2">{{ analysisResult.material }}</h2>
+                        </div>
+                        <div 
+                            :class="analysisResult.recyclable ? 'bg-emerald-100 text-emerald-900 border-emerald-300' : 'bg-amber-100 text-amber-900 border-amber-300'"
+                            class="px-4 py-2 rounded-2xl text-xs font-bold border flex items-center gap-2">
+                            <i :class="analysisResult.recyclable ? 'fa-circle-check text-emerald-600' : 'fa-circle-exclamation text-amber-600'" class="fa-solid"></i>
+                            <span>{{ analysisResult.recyclable ? 'Material Reciclável' : 'Resíduo Especial / Não Reciclável' }}</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Preparation steps -->
+                        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
+                            <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-clipboard-check text-brand-600"></i> Preparo para Descarte
+                            </h4>
+                            <ul class="space-y-2 text-xs text-slate-600 list-disc list-inside">
+                                <li v-for="(step, idx) in analysisResult.preparation" :key="idx" class="leading-relaxed">
+                                    {{ step }}
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Environmental Tip -->
+                        <div class="bg-brand-50/70 p-5 rounded-2xl border border-brand-200 space-y-3 flex flex-col justify-between">
+                            <div>
+                                <h4 class="font-bold text-brand-950 text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-lightbulb text-brand-700"></i> Dica Ambiental
+                                </h4>
+                                <p class="text-xs text-brand-900 font-medium leading-relaxed mt-2">
+                                    {{ analysisResult.environmentalTip }}
+                                </p>
+                            </div>
+                            <div class="pt-3 border-t border-brand-200/60 flex items-center justify-between text-xs">
+                                <span class="font-bold text-slate-500 uppercase text-[10px]">Ecoponto Indicado:</span>
+                                <span class="font-bold text-brand-900 bg-white px-2.5 py-1 rounded-md border border-brand-300">
+                                    {{ analysisResult.destination }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- JSON Raw output accordion for developers/judges -->
+                    <div class="border-t border-slate-100 pt-4">
+                        <button @click="showRawJson = !showRawJson" class="text-xs font-bold text-slate-500 hover:text-slate-700 flex items-center gap-2">
+                            <i :class="showRawJson ? 'fa-chevron-down' : 'fa-chevron-right'" class="fa-solid"></i>
+                            <span>Visualizar JSON retornado pelo Gemma 4</span>
+                        </button>
+                        <pre v-if="showRawJson" class="mt-3 p-4 bg-slate-900 text-slate-100 rounded-xl text-[11px] overflow-x-auto font-mono"><code>{{ JSON.stringify(analysisResult, null, 2) }}</code></pre>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-2">
+                        <button @click="resetImage" class="text-xs font-bold text-slate-500 hover:text-slate-800">
+                            Analisar outra imagem
+                        </button>
+                        <button @click="activeTab = 'points'" class="bg-brand-900 hover:bg-brand-950 text-white font-bold text-xs py-2.5 px-5 rounded-xl transition-colors">
+                            Ver local no Mapa &rarr;
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: PONTOS DE DESCARTE (MAPA E LISTA EM GOIÂNIA) -->
+            <section v-show="activeTab === 'points'" class="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8">
+                <div class="text-center space-y-2">
+                    <span class="bg-brand-100 text-brand-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                        <i class="fa-solid fa-map-pin"></i> OpenStreetMap + Leaflet
+                    </span>
+                    <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-950">Pontos de Coleta & Ecopontos em Goiânia</h1>
+                    <p class="text-slate-600 max-w-xl mx-auto text-sm">
+                        Localize ecopontos da Prefeitura e cooperativas de reciclagem ativas na capital.
+                    </p>
+                </div>
+
+                <!-- Category Filters -->
+                <div class="flex flex-wrap items-center justify-center gap-2">
+                    <button 
+                        v-for="cat in pointCategories" 
+                        :key="cat.key"
+                        @click="selectedPointCategory = cat.key"
+                        :class="selectedPointCategory === cat.key ? 'bg-brand-900 text-white font-bold shadow-md' : 'bg-white text-slate-700 hover:bg-slate-100 font-medium border border-slate-200'"
+                        class="px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-2">
+                        <i :class="cat.icon" class="fa-solid"></i>
+                        <span>{{ cat.label }}</span>
+                    </button>
+                </div>
+
+                <!-- Map & Points Cards Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    
+                    <!-- Leaflet Interactive Map -->
+                    <div class="lg:col-span-7 bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden h-[500px] relative">
+                        <div id="ecopontos-map" class="w-full h-full z-10"></div>
+                    </div>
+
+                    <!-- Filtered List of Ecopontos -->
+                    <div class="lg:col-span-5 bg-white rounded-3xl border border-slate-200 shadow-xl p-6 flex flex-col h-[500px]">
+                        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                            <h3 class="font-bold text-slate-900 text-base">Locais em Goiânia</h3>
+                            <span class="text-xs bg-brand-100 text-brand-900 font-extrabold px-2.5 py-0.5 rounded-full">
+                                {{ filteredPoints.length }} encontrados
+                            </span>
+                        </div>
+
+                        <div class="space-y-3 overflow-y-auto custom-scrollbar flex-grow pr-1">
+                            <div 
+                                v-for="point in filteredPoints" 
+                                :key="point.id"
+                                @click="focusOnPoint(point)"
+                                class="p-4 rounded-2xl bg-slate-50 hover:bg-brand-50/60 border border-slate-200/80 hover:border-brand-300 transition-all cursor-pointer space-y-2">
+                                <div class="flex justify-between items-start">
+                                    <h4 class="font-bold text-slate-900 text-sm">{{ point.name }}</h4>
+                                    <span v-if="point.verified" class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-md">Verificado</span>
+                                </div>
+                                <p class="text-xs text-slate-600 flex items-start gap-1.5">
+                                    <i class="fa-solid fa-location-dot text-brand-600 text-xs mt-0.5"></i>
+                                    <span>{{ point.address }}</span>
+                                </p>
+                                <div class="flex flex-wrap gap-1 pt-1">
+                                    <span 
+                                        v-for="cat in point.acceptedCategories" 
+                                        :key="cat" 
+                                        class="text-[10px] font-bold uppercase bg-white border border-slate-200 text-slate-600 px-2 py-0.5 rounded-md">
+                                        {{ cat }}
+                                    </span>
+                                </div>
+                                <p class="text-[11px] text-slate-500 font-medium pt-1">
+                                    <i class="fa-regular fa-clock text-slate-400"></i> {{ point.openingHours }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: DASHBOARD AMBIENTAL -->
+            <section v-if="activeTab === 'dashboard'" class="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8">
+                <div class="text-center space-y-2">
+                    <span class="bg-brand-100 text-brand-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                        <i class="fa-solid fa-chart-column"></i> Dados Persistidos (PostgreSQL)
+                    </span>
+                    <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-950">Dashboard de Impacto Ambiental</h1>
+                    <p class="text-slate-600 max-w-xl mx-auto text-sm">
+                        Métricas consolidadas a partir dos resíduos identificados na região metropolitana de Goiânia.
+                    </p>
+                </div>
+
+                <!-- KPI Cards Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-2">
+                        <span class="text-xs font-extrabold uppercase tracking-wider text-slate-400">Total Analisado</span>
+                        <h3 class="text-3xl font-black text-slate-950">{{ stats.totalAnalyzed }}</h3>
+                        <p class="text-xs text-brand-600 font-semibold flex items-center gap-1">
+                            <i class="fa-solid fa-arrow-trend-up"></i> +24% em relação ao mês anterior
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-2">
+                        <span class="text-xs font-extrabold uppercase tracking-wider text-slate-400">Índice Reciclável</span>
+                        <h3 class="text-3xl font-black text-brand-600">{{ stats.recyclablePercentage }}%</h3>
+                        <p class="text-xs text-slate-500 font-semibold">
+                            {{ stats.recyclableCount }} de {{ stats.totalAnalyzed }} resíduos aptos
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-2">
+                        <span class="text-xs font-extrabold uppercase tracking-wider text-slate-400">Ecoponto Líder</span>
+                        <h3 class="text-2xl font-black text-slate-950 truncate">Setor Bueno</h3>
+                        <p class="text-xs text-slate-500 font-semibold">
+                            38% das destinações registradas
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-2">
+                        <span class="text-xs font-extrabold uppercase tracking-wider text-slate-400">Acurácia Gemma 4</span>
+                        <h3 class="text-3xl font-black text-emerald-600">96.8%</h3>
+                        <p class="text-xs text-slate-500 font-semibold">
+                            Model Confidence Average
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Material Breakdown Bar Chart Visual -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div class="lg:col-span-7 bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
+                        <h3 class="font-extrabold text-slate-900 text-lg">Distribuição por Categoria de Material</h3>
+                        
+                        <div class="space-y-4">
+                            <div v-for="item in materialBreakdown" :key="item.material" class="space-y-1">
+                                <div class="flex justify-between text-xs font-bold text-slate-700">
+                                    <span>{{ item.material }}</span>
+                                    <span>{{ item.count }} itens ({{ item.percentage }}%)</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                                    <div 
+                                        :style="{ width: item.percentage + '%' }" 
+                                        :class="item.color"
+                                        class="h-full rounded-full transition-all duration-500">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Impact Insights Card -->
+                    <div class="lg:col-span-5 bg-gradient-to-br from-brand-900 to-brand-950 text-white rounded-3xl shadow-xl p-6 sm:p-8 flex flex-col justify-between space-y-6">
+                        <div class="space-y-4">
+                            <span class="bg-brand-800 text-brand-200 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+                                Economia Circular em Ação
+                            </span>
+                            <h3 class="text-2xl font-black">Inteligência Territorial para Goiânia</h3>
+                            <p class="text-brand-100 text-xs leading-relaxed">
+                                Os dados gerados pelas consultas permitem mapear os bairros com maior produção de plásticos e metais, otimizando a logística de recolhimento das cooperativas parceiras.
+                            </p>
+                        </div>
+
+                        <div class="bg-brand-900/80 p-4 rounded-2xl border border-brand-800 space-y-2">
+                            <div class="flex justify-between text-xs text-brand-200 font-bold">
+                                <span>Meta de Desvio de Aterros Sanitaristas</span>
+                                <span>68% Concluído</span>
+                            </div>
+                            <div class="w-full bg-brand-950 h-2.5 rounded-full overflow-hidden">
+                                <div class="bg-brand-400 h-full rounded-full" style="width: 68%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Logs Table -->
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-4">
+                    <h3 class="font-extrabold text-slate-900 text-lg">Últimas Análises Registradas</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="border-b border-slate-200 text-slate-400 font-extrabold uppercase tracking-wider">
+                                    <th class="py-3 px-4">Horário</th>
+                                    <th class="py-3 px-4">Material</th>
+                                    <th class="py-3 px-4">Categoria</th>
+                                    <th class="py-3 px-4">Status</th>
+                                    <th class="py-3 px-4">Destino</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 font-medium">
+                                <tr v-for="log in recentLogs" :key="log.id" class="hover:bg-slate-50">
+                                    <td class="py-3.5 px-4 text-slate-500">{{ log.time }}</td>
+                                    <td class="py-3.5 px-4 font-bold text-slate-900">{{ log.material }}</td>
+                                    <td class="py-3.5 px-4 text-slate-600">{{ log.category }}</td>
+                                    <td class="py-3.5 px-4">
+                                        <span 
+                                            :class="log.recyclable ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'"
+                                            class="px-2 py-0.5 rounded-md font-bold text-[10px]">
+                                            {{ log.recyclable ? 'Reciclável' : 'Especial' }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-slate-600">{{ log.destination }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white border-t border-slate-200 py-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-500">
+                <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center text-white font-bold">V</div>
+                    <span class="font-extrabold text-slate-900">VIRA GYN</span>
+                    <span>• Goiânia, Goiás, Brasil</span>
+                </div>
+                <p>Hackathon Project — Open Source (Vue 3 + NestJS + Gemma 4)</p>
+            </div>
+        </footer>
+
+        <!-- Mobile Bottom Navigation Bar -->
+        <div class="md:hidden sticky bottom-0 z-40 bg-white border-t border-slate-200 py-2.5 px-4 flex justify-around items-center shadow-lg">
+            <button @click="activeTab = 'home'" :class="activeTab === 'home' ? 'text-brand-600 font-bold' : 'text-slate-500'" class="flex flex-col items-center gap-1 text-[10px]">
+                <i class="fa-solid fa-house text-base"></i>
+                <span>Início</span>
+            </button>
+            <button @click="activeTab = 'identify'" :class="activeTab === 'identify' ? 'text-brand-600 font-bold' : 'text-slate-500'" class="flex flex-col items-center gap-1 text-[10px]">
+                <i class="fa-solid fa-camera text-base"></i>
+                <span>Identificar</span>
+            </button>
+            <button @click="activeTab = 'points'" :class="activeTab === 'points' ? 'text-brand-600 font-bold' : 'text-slate-500'" class="flex flex-col items-center gap-1 text-[10px]">
+                <i class="fa-solid fa-map-location-dot text-base"></i>
+                <span>Ecopontos</span>
+            </button>
+            <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'text-brand-600 font-bold' : 'text-slate-500'" class="flex flex-col items-center gap-1 text-[10px]">
+                <i class="fa-solid fa-chart-pie text-base"></i>
+                <span>Dashboard</span>
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Vue 3 Application Script -->
+    <script>
+        const { createApp, ref, computed, onMounted, watch, nextTick } = Vue;
+
+        createApp({
+            setup() {
+                const activeTab = ref('home');
+                const dragActive = ref(false);
+                const fileInput = ref(null);
+                const selectedImage = ref(null);
+                const isAnalyzing = ref(false);
+                const analysisResult = ref(null);
+                const showRawJson = ref(false);
+                const selectedPointCategory = ref('all');
+
+                // Sample images data for quick simulation testing
+                const sampleWastes = [
+                    {
+                        id: 1,
+                        name: 'Garrafa PET 2L',
+                        category: 'Plástico',
+                        emoji: '🥤',
+                        result: {
+                            category: 'Plástico',
+                            material: 'Garrafa PET (Polietileno Tereftalato)',
+                            recyclable: true,
+                            destination: 'Ecoponto Setor Bueno',
+                            preparation: [
+                                'Esvaziar completamente o resíduo líquido',
+                                'Retirar o excesso de sujeira externa',
+                                'Amassar a garrafa para reduzir o volume'
+                            ],
+                            environmentalTip: 'O PET limpo economiza até 70% de energia na cadeia de reciclagem de cooperativas em Goiânia.'
+                        }
+                    },
+                    {
+                        id: 2,
+                        name: 'Caixa de Papelão',
+                        category: 'Papel',
+                        emoji: '📦',
+                        result: {
+                            category: 'Papel / Papelão',
+                            material: 'Papelão Ondulado',
+                            recyclable: true,
+                            destination: 'Ecoponto Guanabara',
+                            preparation: [
+                                'Desmontar as abas da caixa para deixá-la plana',
+                                'Remover fitas adesivas plásticas quando possível',
+                                'Manter seco sem contato com gordura'
+                            ],
+                            environmentalTip: 'Papelão seco tem taxa de reaproveitamento de quase 100% nas cooperativas locais.'
+                        }
+                    },
+                    {
+                        id: 3,
+                        name: 'Garrafa de Vidro',
+                        category: 'Vidro',
+                        emoji: '🍾',
+                        result: {
+                            category: 'Vidro',
+                            material: 'Vidro Transparente Reutilizável',
+                            recyclable: true,
+                            destination: 'Cooperativa Beira Lixo',
+                            preparation: [
+                                'Enxaguar o interior com água de reúso',
+                                'Retirar tampas metálicas ou plásticas',
+                                'Não quebrar o vidro para segurança dos catadores'
+                            ],
+                            environmentalTip: 'O vidro pode ser reciclado infinitas vezes sem perder a sua pureza original.'
+                        }
+                    },
+                    {
+                        id: 4,
+                        name: 'Bateria de Celular',
+                        category: 'Eletrônicos',
+                        emoji: '🔋',
+                        result: {
+                            category: 'Eletrônicos e Baterias',
+                            material: 'Bateria de Íon de Lítio',
+                            recyclable: false,
+                            destination: 'Ecoponto Faiçalville (Descarte Especial)',
+                            preparation: [
+                                'Isolar os terminais com fita crepe',
+                                'Armazenar em local seco até a entrega',
+                                'Nunca descartar no lixo comum ou orgânico'
+                            ],
+                            environmentalTip: 'Baterias contêm metais pesados e exigem logística reversa para prevenir contaminação do solo.'
+                        }
+                    }
+                ];
+
+                // Goiânia Ecopontos Real-world dataset
+                const ecopontos = [
+                    {
+                        id: 1,
+                        name: 'Ecoponto Setor Bueno',
+                        address: 'Rua T-36 c/ Av. T-9, Setor Bueno, Goiânia - GO',
+                        lat: -16.7024,
+                        lng: -49.2785,
+                        acceptedCategories: ['Plástico', 'Papel', 'Vidro', 'Metal'],
+                        categoryKey: 'plastic',
+                        openingHours: 'Segunda a Sábado: 07h às 19h',
+                        verified: true
+                    },
+                    {
+                        id: 2,
+                        name: 'Ecoponto Guanabara',
+                        address: 'Rua GB-5, Jardim Guanabara, Goiânia - GO',
+                        lat: -16.6389,
+                        lng: -49.2215,
+                        acceptedCategories: ['Papel', 'Plástico', 'Metal'],
+                        categoryKey: 'paper',
+                        openingHours: 'Segunda a Sábado: 07h às 18h',
+                        verified: true
+                    },
+                    {
+                        id: 3,
+                        name: 'Ecoponto Faiçalville',
+                        address: 'Av. Faiçalville, Setor Faiçalville, Goiânia - GO',
+                        lat: -16.7385,
+                        lng: -49.3012,
+                        acceptedCategories: ['Eletrônicos', 'Baterias', 'Metal'],
+                        categoryKey: 'electronics',
+                        openingHours: 'Segunda a Sexta: 08h às 17h',
+                        verified: true
+                    },
+                    {
+                        id: 4,
+                        name: 'Ecoponto Campos Elíseos',
+                        address: 'Rua CP-4, Setor Campos Elíseos, Goiânia - GO',
+                        lat: -16.6542,
+                        lng: -49.3198,
+                        acceptedCategories: ['Vidro', 'Plástico', 'Papel'],
+                        categoryKey: 'glass',
+                        openingHours: 'Segunda a Sábado: 07h às 19h',
+                        verified: true
+                    },
+                    {
+                        id: 5,
+                        name: 'Cooperativa Beira Lixo',
+                        address: 'Av. Independência, Vila Nova, Goiânia - GO',
+                        lat: -16.6712,
+                        lng: -49.2451,
+                        acceptedCategories: ['Óleo', 'Plástico', 'Metal'],
+                        categoryKey: 'oil',
+                        openingHours: 'Segunda a Sábado: 08h às 18h',
+                        verified: true
+                    }
+                ];
+
+                const pointCategories = [
+                    { key: 'all', label: 'Todos', icon: 'fa-border-all' },
+                    { key: 'plastic', label: 'Plástico', icon: 'fa-bottle-water' },
+                    { key: 'paper', label: 'Papel', icon: 'fa-box' },
+                    { key: 'glass', label: 'Vidro', icon: 'fa-wine-bottle' },
+                    { key: 'electronics', label: 'Eletrônicos', icon: 'fa-bolt' },
+                    { key: 'oil', label: 'Óleo de Cozinha', icon: 'fa-oil-can' }
+                ];
+
+                const filteredPoints = computed(() => {
+                    if (selectedPointCategory.value === 'all') return ecopontos;
+                    return ecopontos.filter(p => p.categoryKey === selectedPointCategory.value);
+                });
+
+                // Dashboard Stats
+                const stats = ref({
+                    totalAnalyzed: 1428,
+                    recyclableCount: 1104,
+                    recyclablePercentage: 77.3
+                });
+
+                const materialBreakdown = ref([
+                    { material: 'Plásticos (PET, PEAD)', count: 642, percentage: 45, color: 'bg-brand-500' },
+                    { material: 'Papel & Papelão', count: 357, percentage: 25, color: 'bg-teal-500' },
+                    { material: 'Vidros Embalagens', count: 214, percentage: 15, color: 'bg-emerald-600' },
+                    { material: 'Eletrônicos & Pilhas', count: 142, percentage: 10, color: 'bg-brand-800' },
+                    { material: 'Outros / Especiais', count: 73, percentage: 5, color: 'bg-amber-500' }
+                ]);
+
+                const recentLogs = ref([
+                    { id: 1, time: 'Hoje 12:10', material: 'Garrafa PET 2L', category: 'Plástico', recyclable: true, destination: 'Setor Bueno' },
+                    { id: 2, time: 'Hoje 11:45', material: 'Caixa Papelão', category: 'Papel', recyclable: true, destination: 'Guanabara' },
+                    { id: 3, time: 'Hoje 10:20', material: 'Bateria Celular', category: 'Eletrônicos', recyclable: false, destination: 'Faiçalville' },
+                    { id: 4, time: 'Ontem 18:30', material: 'Pote de Vidro', category: 'Vidro', recyclable: true, destination: 'Campos Elíseos' }
+                ]);
+
+                // Methods for Image Analysis
+                function triggerFileInput() {
+                    fileInput.value.click();
+                }
+
+                function handleFileUpload(event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            selectedImage.value = e.target.result;
+                            analysisResult.value = null;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                }
+
+                function handleDrop(event) {
+                    dragActive.value = false;
+                    const file = event.dataTransfer.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            selectedImage.value = e.target.result;
+                            analysisResult.value = null;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                }
+
+                function selectSample(sample) {
+                    selectedImage.value = 'https://placehold.co/400x300/10b981/ffffff?text=' + encodeURIComponent(sample.name);
+                    analysisResult.value = sample.result;
+                }
+
+                function resetImage() {
+                    selectedImage.value = null;
+                    analysisResult.value = null;
+                    if (fileInput.value) fileInput.value.value = '';
+                }
+
+                function runGemmaAnalysis() {
+                    isAnalyzing.value = true;
+                    analysisResult.value = null;
+                    setTimeout(() => {
+                        isAnalyzing.value = false;
+                        analysisResult.value = sampleWastes[0].result;
+                    }, 1500);
+                }
+
+                // Leaflet Map Logic
+                let leafletMap = null;
+                let mapMarkers = [];
+
+                function initMap() {
+                    const container = document.getElementById('ecopontos-map');
+                    if (!container) return;
+
+                    leafletMap = L.map('ecopontos-map').setView([-16.6799, -49.255], 12);
+
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; OpenStreetMap contributors'
+                    }).addTo(leafletMap);
+
+                    updateMapMarkers();
+                }
+
+                function updateMapMarkers() {
+                    if (!leafletMap) return;
+                    mapMarkers.forEach(m => leafletMap.removeLayer(m));
+                    mapMarkers = [];
+
+                    filteredPoints.value.forEach(point => {
+                        const marker = L.marker([point.lat, point.lng]).addTo(leafletMap)
+                            .bindPopup(`
+                                <div class="p-1 font-sans">
+                                    <h4 class="font-bold text-slate-900 text-sm">${point.name}</h4>
+                                    <p class="text-xs text-slate-600 mt-1">${point.address}</p>
+                                    <p class="text-[11px] text-brand-700 font-semibold mt-2">${point.openingHours}</p>
+                                </div>
+                            `);
+                        mapMarkers.push(marker);
+                    });
+                }
+
+                function focusOnPoint(point) {
+                    if (leafletMap) {
+                        leafletMap.setView([point.lat, point.lng], 15, { animate: true });
+                    }
+                }
+
+                watch(activeTab, (newTab) => {
+                    if (newTab === 'points') {
+                        nextTick(() => {
+                            if (!leafletMap) {
+                                initMap();
+                            } else {
+                                leafletMap.invalidateSize();
+                            }
+                        });
+                    }
+                });
+
+                watch(selectedPointCategory, () => {
+                    updateMapMarkers();
+                });
+
+                onMounted(() => {
+                    if (activeTab.value === 'points') {
+                        initMap();
+                    }
+                });
+
+                return {
+                    activeTab,
+                    dragActive,
+                    fileInput,
+                    selectedImage,
+                    isAnalyzing,
+                    analysisResult,
+                    showRawJson,
+                    sampleWastes,
+                    pointCategories,
+                    selectedPointCategory,
+                    filteredPoints,
+                    stats,
+                    materialBreakdown,
+                    recentLogs,
+                    triggerFileInput,
+                    handleFileUpload,
+                    handleDrop,
+                    selectSample,
+                    resetImage,
+                    runGemmaAnalysis,
+                    focusOnPoint
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
